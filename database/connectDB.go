@@ -1,26 +1,35 @@
 package database
 
 import (
-	"database/sql"
+	"fmt"
+	"log"
 	"os"
 
-	_ "github.com/lib/pq"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
-func CreateConnection() *sql.DB {
+var DB *gorm.DB
 
-	//connect to db
-	db, err := sql.Open("postgres", os.Getenv("POSTGRES_URI"))
+func ConnectDB() {
+	// Get environment variables
+	host := os.Getenv("DB_HOST")
+	port := os.Getenv("DB_PORT")
+	user := os.Getenv("DB_USER")
+	password := os.Getenv("DB_PASSWORD")
+	dbname := os.Getenv("DB_NAME")
+	sslmode := os.Getenv("DB_SSLMODE")
 
+	// Create the DSN (Data Source Name)
+	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+		host, port, user, password, dbname, sslmode)
+
+	// Connect to the database
+	var err error
+	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		panic(err)
+		log.Fatal("Failed to connect to database:", err)
 	}
 
-	//checking connection
-	err = db.Ping()
-
-	if err != nil {
-		panic(err)
-	}
-	return db
+	log.Println("Database connection established successfully")
 }
