@@ -19,7 +19,9 @@ func main() {
 	}
 
 	// Initialize database connection
-	database.ConnectDB()
+	if err := database.ConnectDB(); err != nil {
+		log.Fatalf("Failed to initialize database: %v", err)
+	}
 
 	// Get port from environment or default to 8000
 	port := os.Getenv("PORT")
