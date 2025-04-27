@@ -78,6 +78,9 @@ func Signup() gin.HandlerFunc {
 		}
 		user.Password = hashedPassword
 
+		// set the user role to be "user"
+		user.Role = "user"
+
 		// Create the user
 		if err := db.Create(user).Error; err != nil {
 			log.Printf("Failed to create user: %v", err)
@@ -96,6 +99,7 @@ func Signup() gin.HandlerFunc {
 				"id":    user.ID,
 				"name":  user.Name,
 				"email": user.Email,
+				"role":  user.Role,
 			},
 		})
 	}
@@ -148,7 +152,7 @@ func Signin() gin.HandlerFunc {
 			return
 		}
 
-		token, err := helpers.GenerateToken(string(existingUser.ID))
+		token, err := helpers.GenerateToken(existingUser.ID, existingUser.Role)
 
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
@@ -158,6 +162,7 @@ func Signin() gin.HandlerFunc {
 			return
 		}
 
+		c.SetCookie("Authorization", token, 60*60*24*7, "/", "", false, true)
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
 			"message": "Logged in successfully!",

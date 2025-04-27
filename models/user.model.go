@@ -11,8 +11,9 @@ type User struct {
 	Name      string    `gorm:"not null" json:"name" validate:"required,min=2,max=100"`
 	Email     string    `gorm:"unique;not null" json:"email" validate:"email,required"`
 	Password  string    `gorm:"not null" json:"password" validate:"required,min=6"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
+	Role      string    `gorm:"type:varchar(20);default:user" json:"role,omitempty" validate:"omitempty,oneof=user admin"`
+	CreatedAt time.Time `json:"created_at" gorm:"autoCreateTime"`
+	UpdatedAt time.Time `json:"updated_at" gorm:"autoUpdateTime"`
 }
 
 func (user *User) HashPassword() (string, error) {
@@ -22,8 +23,5 @@ func (user *User) HashPassword() (string, error) {
 
 func (user *User) ComparePassword(password string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
-	if err == nil {
-		return true
-	}
-	return false
+	return err == nil
 }

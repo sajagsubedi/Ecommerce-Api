@@ -43,7 +43,11 @@ func ConnectDB() error {
 	}
 
 	// Auto-migrate all models
-	err = DB.AutoMigrate(&models.User{})
+	err = DB.AutoMigrate(
+		&models.User{},
+		&models.Product{},
+	)
+
 	if err != nil {
 		return fmt.Errorf("error migrating models: %w", err)
 	}
