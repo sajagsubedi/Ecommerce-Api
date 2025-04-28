@@ -13,7 +13,8 @@ func ProductRoutes(incomingRoutes *gin.Engine) {
 
 	adminRoutes := productRoutes.Group("")
 	adminRoutes.Use(middlewares.CheckAdmin())
+
 	adminRoutes.POST("/", controller.CreateProduct())
-	productRoutes.PUT("/:productId", controller.UpdateProduct())
-	productRoutes.DELETE("/:productId", controller.DeleteProduct())
+	adminRoutes.PUT("/:productId", controller.UpdateProduct())
+	adminRoutes.DELETE("/:productId", controller.DeleteProduct())
 }

@@ -91,6 +91,20 @@ func Signup() gin.HandlerFunc {
 			return
 		}
 
+		//create a cart for the user
+		cart := models.Cart{
+			UserID: user.ID,
+			Items:  []models.CartItem{},
+		}
+		if err := db.Create(&cart).Error; err != nil {
+			log.Printf("Failed to create cart: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "Failed to create cart",
+			})
+			return
+		}
+
 		// Return success response (exclude sensitive fields)
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,

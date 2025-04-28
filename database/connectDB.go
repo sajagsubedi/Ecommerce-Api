@@ -46,6 +46,8 @@ func ConnectDB() error {
 	err = DB.AutoMigrate(
 		&models.User{},
 		&models.Product{},
+		&models.Cart{},
+		&models.CartItem{},
 	)
 
 	if err != nil {
