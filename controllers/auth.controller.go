@@ -15,7 +15,6 @@ import (
 
 var validate = validator.New()
 
-// Signup handles user registration.
 func Signup() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -23,89 +22,53 @@ func Signup() gin.HandlerFunc {
 
 		db := database.DB.WithContext(ctx)
 
-		// Bind and validate input
 		user := new(models.User)
 		if err := c.BindJSON(user); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"success": false,
-				"message": "Invalid request payload",
-			})
+			handleError(c, http.StatusBadRequest, "Invalid request payload")
 			return
 		}
 
-		// Validate struct fields
 		if err := validate.Struct(user); err != nil {
-			validationErrors := err.(validator.ValidationErrors)
-			c.JSON(http.StatusBadRequest, gin.H{
-				"success": false,
-				"message": validationErrors.Error(),
-			})
+			handleError(c, http.StatusBadRequest, err.(validator.ValidationErrors).Error())
 			return
 		}
 
-		// Check if user already exists
 		var existingUser []models.User
-
-		// Query the database for a user with the given email
-		err := db.Where("email = ?", user.Email).Find(&existingUser).Error
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"success": false,
-				"message": "Internal Server error",
-			})
+		if err := db.Where("email = ?", user.Email).Find(&existingUser).Error; err != nil {
+			handleError(c, http.StatusInternalServerError, "Internal Server Error")
 			return
 		}
 
-		//if user already exists with given email
 		if len(existingUser) > 0 {
-			c.JSON(http.StatusConflict, gin.H{
-				"success": false,
-				"message": "User with given email already exists!",
-			})
+			handleError(c, http.StatusConflict, "User with given email already exists!")
 			return
 		}
 
-		// Hash the password
 		hashedPassword, err := user.HashPassword()
-
 		if err != nil {
 			log.Printf("Failed to hash password: %v", err)
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"success": false,
-				"message": "Failed to process password",
-			})
+			handleError(c, http.StatusInternalServerError, "Failed to process password")
 			return
 		}
 		user.Password = hashedPassword
-
-		// set the user role to be "user"
 		user.Role = "user"
 
-		// Create the user
 		if err := db.Create(user).Error; err != nil {
 			log.Printf("Failed to create user: %v", err)
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"success": false,
-				"message": "Failed to register user",
-			})
+			handleError(c, http.StatusInternalServerError, "Failed to register user")
 			return
 		}
 
-		//create a cart for the user
 		cart := models.Cart{
 			UserID: user.ID,
 			Items:  []models.CartItem{},
 		}
 		if err := db.Create(&cart).Error; err != nil {
 			log.Printf("Failed to create cart: %v", err)
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"success": false,
-				"message": "Failed to create cart",
-			})
+			handleError(c, http.StatusInternalServerError, "Failed to create cart")
 			return
 		}
 
-		// Return success response (exclude sensitive fields)
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
 			"message": "User registered successfully",
@@ -127,52 +90,30 @@ func Signin() gin.HandlerFunc {
 		db := database.DB.WithContext(ctx)
 
 		var user models.User
-
 		if err := c.BindJSON(&user); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"success": false,
-				"message": "Internal Server Error!",
-			})
+			handleError(c, http.StatusInternalServerError, "Internal Server Error")
 			return
 		}
 
 		if user.Email == "" || user.Password == "" {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"success": false,
-				"message": "Please provide all fields!",
-			})
+			handleError(c, http.StatusBadRequest, "Please provide all fields!")
 			return
 		}
 
 		var existingUser models.User
-
-		err := db.Where("email = ?", user.Email).First(&existingUser).Error
-
-		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"success": false,
-				"message": "Invalid credendals!",
-			})
+		if err := db.Where("email = ?", user.Email).First(&existingUser).Error; err != nil {
+			handleError(c, http.StatusUnauthorized, "Invalid credentials!")
 			return
 		}
 
-		isPasswordCorrect := existingUser.ComparePassword(user.Password)
-
-		if !isPasswordCorrect {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"success": false,
-				"message": "Invalid credendals!",
-			})
+		if !existingUser.ComparePassword(user.Password) {
+			handleError(c, http.StatusUnauthorized, "Invalid credentials!")
 			return
 		}
 
 		token, err := helpers.GenerateToken(existingUser.ID, existingUser.Role)
-
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"success": false,
-				"message": "Something went wrong!",
-			})
+			handleError(c, http.StatusInternalServerError, "Something went wrong!")
 			return
 		}
 
@@ -182,7 +123,5 @@ func Signin() gin.HandlerFunc {
 			"message": "Logged in successfully!",
 			"token":   token,
 		})
-		return
-
 	}
 }

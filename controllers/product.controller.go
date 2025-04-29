@@ -3,7 +3,6 @@ package controllers
 import (
 	"context"
 	"errors"
-	"log"
 	"net/http"
 	"time"
 
@@ -19,22 +18,17 @@ func GetAllProducts() gin.HandlerFunc {
 		defer cancel()
 
 		db := database.DB.WithContext(ctx)
-		var existingProducts []models.Product
+		var products []models.Product
 
-		err := db.Find(&existingProducts).Error
-		if err != nil {
-			log.Fatal(err)
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"success": false,
-				"message": "Internal Server Error",
-			})
+		if err := db.Find(&products).Error; err != nil {
+			handleError(c, http.StatusInternalServerError, "Failed to fetch products")
 			return
 		}
 
 		c.JSON(http.StatusOK, gin.H{
 			"success":  true,
 			"message":  "Products fetched successfully!",
-			"products": existingProducts,
+			"products": products,
 		})
 	}
 }
@@ -45,31 +39,23 @@ func GetProductById() gin.HandlerFunc {
 		defer cancel()
 
 		db := database.DB.WithContext(ctx)
-
 		productId := c.Param("productId")
 
-		var existingProduct models.Product
-
-		err := db.Where("id = ?", productId).First(&existingProduct).Error
+		var product models.Product
+		err := db.Where("id = ?", productId).First(&product).Error
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				c.JSON(http.StatusNotFound, gin.H{
-					"success": false,
-					"message": "Product not found",
-					"product": nil,
-				})
+				handleError(c, http.StatusNotFound, "Product not found")
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"success": false,
-				"message": "Internal Server Error",
-			})
+			handleError(c, http.StatusInternalServerError, "Failed to fetch product")
 			return
 		}
+
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
 			"message": "Product fetched successfully!",
-			"product": existingProduct,
+			"product": product,
 		})
 	}
 }
@@ -80,23 +66,15 @@ func CreateProduct() gin.HandlerFunc {
 		defer cancel()
 
 		db := database.DB.WithContext(ctx)
-
 		var product models.Product
 
 		if err := c.BindJSON(&product); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"success": false,
-				"message": "Invalid request payload",
-			})
+			handleError(c, http.StatusBadRequest, "Invalid request payload")
 			return
 		}
 
-		err := db.Create(&product).Error
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"success": false,
-				"message": "Internal Server Error",
-			})
+		if err := db.Create(&product).Error; err != nil {
+			handleError(c, http.StatusInternalServerError, "Failed to create product")
 			return
 		}
 
@@ -114,49 +92,41 @@ func UpdateProduct() gin.HandlerFunc {
 		defer cancel()
 
 		db := database.DB.WithContext(ctx)
-
 		productId := c.Param("productId")
 
-		var product models.Product
-
-		if err := c.BindJSON(&product); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"success": false,
-				"message": "Invalid request payload",
-			})
+		var updatedData models.Product
+		if err := c.BindJSON(&updatedData); err != nil {
+			handleError(c, http.StatusBadRequest, "Invalid request payload")
 			return
 		}
 
-		err := db.Model(&product).Where("id = ?", productId).Updates(product).Error
-		if err != nil {
+		// First check if the product exists
+		var existingProduct models.Product
+		if err := db.Where("id = ?", productId).First(&existingProduct).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				c.JSON(http.StatusNotFound, gin.H{
-					"success": false,
-					"message": "Product not found",
-				})
+				handleError(c, http.StatusNotFound, "Product not found")
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"success": false,
-				"message": "Internal Server Error",
-			})
+			handleError(c, http.StatusInternalServerError, "Failed to fetch product")
 			return
 		}
-		//get the updated product
-		err = db.Where("id = ?", productId).First(&product).Error
 
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{
-				"success": false,
-				"message": "Product not found",
-			})
+		// Now update the product
+		if err := db.Model(&existingProduct).Updates(updatedData).Error; err != nil {
+			handleError(c, http.StatusInternalServerError, "Failed to update product")
+			return
+		}
+
+		// Fetch updated product
+		if err := db.Where("id = ?", productId).First(&existingProduct).Error; err != nil {
+			handleError(c, http.StatusInternalServerError, "Failed to fetch updated product")
 			return
 		}
 
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
 			"message": "Product updated successfully!",
-			"product": product,
+			"product": existingProduct,
 		})
 	}
 }
@@ -167,24 +137,28 @@ func DeleteProduct() gin.HandlerFunc {
 		defer cancel()
 
 		db := database.DB.WithContext(ctx)
-
 		productId := c.Param("productId")
 
 		var product models.Product
-
-		err := db.Where("id = ?", productId).Delete(&product).Error
-		if err != nil {
+		if err := db.Where("id = ?", productId).First(&product).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				c.JSON(http.StatusNotFound, gin.H{
-					"success": false,
-					"message": "Product not found",
-				})
+				handleError(c, http.StatusNotFound, "Product not found")
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"success": false,
-				"message": "Internal Server Error",
-			})
+			handleError(c, http.StatusInternalServerError, "Failed to find product")
+			return
+		}
+
+		if err := db.Delete(&product).Error; err != nil {
+			handleError(c, http.StatusInternalServerError, "Failed to delete product")
+			return
+		}
+
+		//delete the cart item with the product
+		var cartItem models.CartItem
+
+		if err := db.Where("product_id = ?", productId).Delete(&cartItem).Error; err != nil {
+			handleError(c, http.StatusInternalServerError, "Failed to delete cart item using the deleted product")
 			return
 		}
 
