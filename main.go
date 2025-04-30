@@ -57,6 +57,7 @@ func main() {
 	routes.ProductRoutes(router)
 	routes.CartRoutes(router)
 	routes.OrderRoutes(router)
+	routes.UserRoutes(router)
 
 	// Start the server
 	log.Printf("Server running on port %s", port)

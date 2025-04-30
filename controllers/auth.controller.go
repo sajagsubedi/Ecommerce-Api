@@ -125,3 +125,13 @@ func Signin() gin.HandlerFunc {
 		})
 	}
 }
+
+func Signout() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.SetCookie("Authorization", "", -1, "/", "", false, true)
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "Logged out successfully!",
+		})
+	}
+}
