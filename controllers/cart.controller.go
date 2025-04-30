@@ -33,7 +33,7 @@ func GetCart() gin.HandlerFunc {
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
 			"message": "Cart fetched successfully",
-			"cart":    cart,
+			"data":    cart,
 		})
 	}
 }
@@ -93,7 +93,7 @@ func AddToCart() gin.HandlerFunc {
 		c.JSON(http.StatusCreated, gin.H{
 			"success": true,
 			"message": "Product added to cart",
-			"cart":    updatedCart,
+			"data":    updatedCart,
 		})
 	}
 }
@@ -134,9 +134,9 @@ func UpdateCartItemQuantity() gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, gin.H{
-			"success":  true,
-			"message":  "Cart item updated",
-			"cartItem": cartItem,
+			"success": true,
+			"message": "Cart item updated",
+			"data":    cartItem,
 		})
 	}
 }

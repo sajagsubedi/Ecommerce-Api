@@ -7,10 +7,10 @@ import (
 )
 
 func CartRoutes(incomingRoutes *gin.Engine) {
-	CartRoutes := incomingRoutes.Group("/api/v1/cart")
-	CartRoutes.Use(middlewares.CheckUser())
-	CartRoutes.GET("/", controller.GetCart())
-	CartRoutes.POST("/", controller.AddToCart())
-	CartRoutes.PUT("/update-quantity/:cartItemId", controller.UpdateCartItemQuantity())
-	CartRoutes.DELETE("/:id", controller.DeleteCartItem())
+	incomingcartRoutes := incomingRoutes.Group("/api/v1/cart")
+	incomingcartRoutes.Use(middlewares.CheckUser())
+	incomingcartRoutes.GET("/", controller.GetCart())
+	incomingcartRoutes.POST("/", controller.AddToCart())
+	incomingcartRoutes.PUT("/update-quantity/:cartItemId", controller.UpdateCartItemQuantity())
+	incomingcartRoutes.DELETE("/:id", controller.DeleteCartItem())
 }

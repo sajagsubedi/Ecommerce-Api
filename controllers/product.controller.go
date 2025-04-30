@@ -26,9 +26,9 @@ func GetAllProducts() gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, gin.H{
-			"success":  true,
-			"message":  "Products fetched successfully!",
-			"products": products,
+			"success": true,
+			"message": "Products fetched successfully!",
+			"data":    products,
 		})
 	}
 }
@@ -55,7 +55,7 @@ func GetProductById() gin.HandlerFunc {
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
 			"message": "Product fetched successfully!",
-			"product": product,
+			"data":    product,
 		})
 	}
 }
@@ -81,7 +81,7 @@ func CreateProduct() gin.HandlerFunc {
 		c.JSON(http.StatusCreated, gin.H{
 			"success": true,
 			"message": "Product created successfully!",
-			"product": product,
+			"data":    product,
 		})
 	}
 }
@@ -126,7 +126,7 @@ func UpdateProduct() gin.HandlerFunc {
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
 			"message": "Product updated successfully!",
-			"product": existingProduct,
+			"data":    existingProduct,
 		})
 	}
 }

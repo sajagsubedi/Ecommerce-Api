@@ -48,6 +48,9 @@ func ConnectDB() error {
 		&models.Product{},
 		&models.Cart{},
 		&models.CartItem{},
+		&models.Order{},
+		&models.OrderItem{},
+		&models.ShippingAddress{},
 	)
 
 	if err != nil {
